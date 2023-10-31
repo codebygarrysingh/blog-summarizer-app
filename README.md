@@ -28,13 +28,10 @@ Before using the Blog Summarizer App, ensure that you have the following prerequ
    cd blog-summarizer-app
 2. Install the required Python packages using pip.
 3. Configure your OpenAI API key in the config.py file:
-# config.py
-
-OPENAI_API_KEY = "YOUR_API_KEY_HERE"
 
 ## Usage
 
-1. Place your blog articles in the designated directory (_posts by default). Make sure they are in Markdown format (.markdown files).
+1. Place your blog articles in the designated directory
 2. Configure the app using the constants in the config.py file. You can adjust token limits and other settings.
 3. Run the app using the following command:
     ```shell
