@@ -1,82 +1,103 @@
-# 
 # Author: Garry Singh
-# Version: 1.0
+# Version: 2.0
 # Last Updated: 2023-10-31
 # Description: App for summarizing content of blog articles
-#
 
 # Import necessary libraries/modules
 import os
 import openai
 import tiktoken
 from bs4 import BeautifulSoup
+import config
+
+# Constants
+OPENAI_API_KEY = config.OPENAI_API_KEY
+BLOG_DIR = config.BLOG_DIR
+BLOG_FILE_EXT = config.BLOG_FILE_EXT
+BLOG_OFFSET = config.BLOG_OFFSET # Offset to start processing blog content after this line number
+MODEL_NAME = config.MODEL_NAME
+MAX_RESPONSE_TOKENS = config.MAX_RESPONSE_TOKENS
+INSERTION_MARKER = config.INSERTION_MARKER # Placeholder for blog summary in blog files
 
 # Initialize the OpenAI client
-openai.api_key = "<OPEN_API_KEY>"
+openai.api_key = OPENAI_API_KEY
 
-# Set the input directory that contains the Markdown files to be summarized
-input_dir = "<PATH_TO_INPUT_DIR>"
+def num_tokens_in_content(content: str, model_name: str) -> int:
+    """
+    Count the number of tokens in a text string.
 
-# Maximum number of tokens allowed for the prompt
-max_prompt_tokens = 1000
+    Args:
+        content (str): The text content to count tokens in.
+        model_name (str): The name of the language model used for tokenization.
 
-# Insertion marker for the blog file
-insertion_marker = "<!-- Insert Summary Here -->"
-
-def num_tokens_from_string(string: str, encoding_name: str) -> int:
-    """Returns the number of tokens in a text string."""
-    encoding = tiktoken.encoding_for_model("text-davinci-002")
-    num_tokens = len(encoding.encode(string))
+    Returns:
+        int: The number of tokens in the content.
+    """
+    encoding = tiktoken.encoding_for_model(model_name)
+    num_tokens = len(encoding.encode(content))
     return num_tokens
 
-# Iterate through the Markdown files in the input directory
-for filename in os.listdir(input_dir):
-    # Process only the Markdown files
-    if filename.endswith(".markdown"):
-        with open(os.path.join(input_dir, filename), 'r', encoding='utf-8') as file:
-            # Read all lines into a list
-            lines = file.readlines()
+def generate_blog_summary(content: str, model_name: str, max_tokens: int) -> str:
+    """
+    Generate a summary of the content using OpenAI.
 
-            # Start reading from the 12th line and join the remaining lines
-            content = "".join(lines[11:])
+    Args:
+        content (str): The content to generate a summary for.
+        model_name (str): The name of the language model to use.
+        max_tokens (int): The maximum number of tokens in the generated summary.
 
-            if content.__contains__(insertion_marker):
-                soup = BeautifulSoup(content, "html.parser")
-                cleaned_content = soup.get_text()
-                
-                #token_count = num_tokens_from_string(cleaned_content, "text-davinci-002")
-                
-                # Check if the prompt exceeds the maximum allowed tokens
-                #if token_count > max_prompt_tokens:
-                    # Truncate the cleaned content to the maximum allowed tokens
-                #    cleaned_content = cleaned_content[:max_prompt_tokens]
+    Returns:
+        str: The generated summary.
+    """
+    prompt = f"Please provide a coherent and complete summary of the following content:\n{content}\n"
 
-                # Create a prompt that instructs the model to summarize the content
-                prompt = f"Please provide a coherent and complete summary of the following content:\n{cleaned_content}\n"
+    # Generate a summary request to the OpenAI client
+    response = openai.Completion.create(
+        engine=model_name,
+        prompt=prompt,
+        max_tokens=max_tokens
+    )
 
-                # Generate a summary request to the OpenAI client
-                response = openai.Completion.create(
-                    engine="text-davinci-002",
-                    prompt=prompt,  # Using the content of the file as the prompt
-                    max_tokens=150
-                )
+    generated_summary = response.choices[0].text.strip()
 
-                generated_summary = response.choices[0].text.strip()
+    # Find the last occurrence of a period in the generated summary
+    last_period_index = generated_summary.rfind(".")
 
-                # Find the last occurrence of a period in the generated summary
-                last_period_index = generated_summary.rfind(".")
-                
-                # Check if a period was found in the generated summary
-                if last_period_index != -1:
-                    # Trim the content after the last period
-                    trimmed_summary = generated_summary[:last_period_index + 1]
+    # Check if a period was found in the generated summary
+    if last_period_index != -1:
+        # Trim the content after the last period
+        return generated_summary[:last_period_index + 1]
+
+    return generated_summary
+
+def add_summary_to_blogs():
+    """
+    Process and update blog files with generated summaries.
+    """
+    # Iterate through the files in the input directory
+    for blog_file_name in os.listdir(BLOG_DIR):
+        # Process only the Markdown files
+        if blog_file_name.endswith(BLOG_FILE_EXT):
+            with open(os.path.join(BLOG_DIR, blog_file_name), 'r', encoding='utf-8') as file:
+                # Read all lines into a list
+                lines = file.readlines()
+
+                # Start reading from the 12th line and join the remaining lines
+                content = "".join(lines[BLOG_OFFSET:])
+
+                if content.__contains__(INSERTION_MARKER):
+                    soup = BeautifulSoup(content, "html.parser")
+                    cleaned_content = soup.get_text()
+
+                    # Create a prompt that instructs the model to summarize the content
+                    summary = generate_blog_summary(cleaned_content, MODEL_NAME, MAX_RESPONSE_TOKENS)
 
                     # Replace the insertion marker with the trimmed summary in the content
-                    updated_content = "".join(lines).replace(insertion_marker, trimmed_summary)
-                else:
-                    # Handle the case where no period was found in the generated summary
-                    updated_content = "".join(lines)
+                    updated_content = "".join(lines).replace(INSERTION_MARKER, summary)
 
-                # Write the updated content with generated summary to the Markdown file
-                with open(os.path.join(input_dir, filename), 'w', encoding='utf-8') as file:
-                    file.write(updated_content)
+                    # Write the updated content with generated summary to the Markdown file
+                    with open(os.path.join(BLOG_DIR, blog_file_name), 'w', encoding='utf-8') as file:
+                        file.write(updated_content)
+
+if __name__ == "__main__":
+    add_summary_to_blogs()
