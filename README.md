@@ -24,7 +24,7 @@ Before using the Blog Summarizer App, ensure that you have the following prerequ
 1. Clone the repository to your local machine:
 
    ```shell
-   git clone https://github.com/yourusername/blog-summarizer-app.git
+   git clone https://github.com/codebygarrysingh/blog-summarizer-app.git
    cd blog-summarizer-app
 2. Install the required Python packages using pip.
 3. Configure your OpenAI API key in the config.py file:
