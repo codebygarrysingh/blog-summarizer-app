@@ -6,6 +6,10 @@
 
 The Blog Summarizer App is a Python application designed to automate the process of summarizing the content of blog articles. It utilizes the OpenAI API to generate concise and coherent summaries from the input content. This app is useful for content creators and bloggers who want to provide a summary of their articles, making it easier for readers to grasp the main points.
 
+The motivation behind creating a Blog Summarizer App is to showcase a common real-world implementation of Large Language Models (LLM) & Generative AI. Powered by Python and the OpenAI’s GPT-3 model, this app empowers content creators and bloggers to provide their readers with a AI generated summaries fine tuned to content of their blogs/articles.
+
+See example summaries <a href="https://codebygarrysingh.github.io/CElegansUnlocksTheSecretsOfSuperintelligence" target="_blank">here</a>.
+
 ## Features
 
 - Summarize blog articles automatically.
